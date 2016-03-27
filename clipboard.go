@@ -9,65 +9,65 @@ import (
 )
 
 type ResultFile struct {
-  Ext, Data string
-  Err error
+  Filename, Data string
 }
 
 const TimeFormat = "20060102150405"
 
 // Return 'extension', 'data', error
 //    extension: png, txt
-func GetClipboard() (file ResultFile) {
+func GetClipboard() (ResultFile, error) {
   // Try to fetch image
-  data, err := GetClipboardImage()
+  resultFile, err := GetClipboardImage()
 
   // nothing went wrong with png, lets return that
   if(err == nil) {
-    return ResultFile{"png", data, err}
+    return resultFile, nil
   }
 
   // Try to fetch text if anything went wrong with png
-  data, err = GetClipboardText()
-  return ResultFile{"txt", data, err}
+  resultFile, err = GetClipboardText()
+  return resultFile, err
 }
 
-func GetClipboardText() (string, error) {
+func GetClipboardText() (ResultFile, error) {
+  imageFilename := filename("txt")
   pasteCommand := exec.Command("pbpaste")
   pasteOutput, err := pasteCommand.Output()
 
   if(err != nil) {
-    return "", err
+    return ResultFile{}, err
   }
 
-  return string(pasteOutput), nil
+  return ResultFile{imageFilename, string(pasteOutput)}, nil
 }
 
-func GetClipboardImage() (string, error) {
+func GetClipboardImage() (ResultFile, error) {
   imageFilename := filename("png")
-  imageFilename = path.Join("/tmp", imageFilename)
   pasteCommand := exec.Command("pngpaste", imageFilename)
   _, err := pasteCommand.Output()
 
   if(err != nil) {
-    return "", err
+    return ResultFile{}, err
   }
 
   data, dataErr := ioutil.ReadFile(imageFilename)
 
-  if(err != nil) {
-    return "", err
+  if(dataErr != nil) {
+    return ResultFile{}, dataErr
   }
 
   dataErr = os.Remove(imageFilename)
 
   if(dataErr != nil) {
-    return "", dataErr
+    return ResultFile{}, dataErr
   }
 
-  return string(data), nil
+  return ResultFile{imageFilename, string(data)}, nil
 }
 
 func filename(ext string) (string) {
   epoch := time.Now().Format("20060102150405")
-  return epoch + "." + ext
+  fileName := epoch + "." + ext
+  return path.Join("/tmp", fileName)
 }
