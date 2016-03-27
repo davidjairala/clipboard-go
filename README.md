@@ -13,6 +13,7 @@ brew install pngpaste
 
 ```go
 import (
+  "fmt"
   "github.com/davidjairala/clipboard-go"
 )
 
